@@ -472,6 +472,7 @@ jobs:
           - container: alpine
             platforms: linux/amd64,linux/arm64,linux/arm/v7
             tags: |
+                  type=ref,event=branch
                   type=ref,event=pr
                   type=semver,pattern=v{{version}}
                   type=semver,pattern=v{{major}}
@@ -488,6 +489,7 @@ jobs:
           - container: debian
             platforms: linux/amd64,linux/arm64,linux/arm/v7
             tags: |
+                  type=ref,event=branch
                   type=ref,event=pr
                   type=semver,pattern=v{{version}}
                   type=semver,pattern=v{{major}}
@@ -536,7 +538,7 @@ jobs:
           tags: ${{ matrix.container }}-base
 
       - name: Build ${{ matrix.container }} Base Docker Image
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v4
         with:
           context: .
           # On PR will fail, force fully uncomment push: true, or docker image will fail for next steps
@@ -560,9 +562,7 @@ jobs:
         with:
           # list of Docker images to use as base name for tags
           images: |
-            nitnelave/lldap
-            lldap/lldap
-            ghcr.io/lldap/lldap
+            ghcr.io/${{ github.repository_owner }}/lldap
           # Wanted Docker tags
           # vX-alpine
           # vX.Y-alpine
@@ -593,9 +593,7 @@ jobs:
         with:
           # list of Docker images to use as base name for tags
           images: |
-            nitnelave/lldap
-            lldap/lldap
-            ghcr.io/lldap/lldap
+            ghcr.io/${{ github.repository_owner }}/lldap
           # Wanted Docker tags
           # vX-alpine
           # vX.Y-alpine
@@ -620,24 +618,16 @@ jobs:
             suffix=-${{ matrix.container }}
           tags: ${{ matrix.tags }}
 
-      # Docker login to nitnelave/lldap and lldap/lldap
-      - name: Login to Nitnelave/LLDAP Docker Hub
+      - name: Log in to the Container registry
         if: github.event_name != 'pull_request'
-        uses: docker/login-action@v3
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
-
-      - name: Login to GitHub Container Registry
-        if: github.event_name != 'pull_request'
-        uses: docker/login-action@v3
+        uses: docker/login-action@v2
         with:
           registry: ghcr.io
-          username: nitnelave
+          username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build ${{ matrix.container }}-rootless Docker Image
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v4
         with:
           context: .
           push: ${{ github.event_name != 'pull_request' }}
@@ -651,7 +641,7 @@ jobs:
 
 ### This docker build always the last, due :latest tag pushed multiple times, for whatever variants may added in future add docker build above this
       - name: Build ${{ matrix.container }} Docker Image
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v4
         with:
           context: .
           push: ${{ github.event_name != 'pull_request' }}
@@ -662,22 +652,6 @@ jobs:
           labels: ${{ steps.meta-standard.outputs.labels }}
           cache-from: type=gha,mode=max
           cache-to: type=gha,mode=max
-
-      - name: Update repo description
-        if: github.event_name != 'pull_request'
-        uses: peter-evans/dockerhub-description@v4
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_PASSWORD }}
-          repository: nitnelave/lldap
-
-      - name: Update lldap repo description
-        if: github.event_name != 'pull_request'
-        uses: peter-evans/dockerhub-description@v4
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_PASSWORD }}
-          repository: lldap/lldap
 
 ###############################################################
 ### Download artifacts, clean up ui, upload to release page ###

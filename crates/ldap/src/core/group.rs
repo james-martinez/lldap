@@ -330,12 +330,10 @@ fn convert_group_filter(
                     substring_filter.clone().into(),
                 )),
                 GroupFieldType::NoMatch => Ok(GroupRequestFilter::False),
-                _ => Err(LdapError {
-                    code: LdapResultCode::UnwillingToPerform,
-                    message: format!(
-                        "Unsupported group attribute for substring filter: \"{field}\""
-                    ),
-                }),
+                _ => {
+                    warn!("Unsupported group attribute for substring filter: \"{field}\"");
+                    Ok(GroupRequestFilter::False)
+                }
             }
         }
         _ => Err(LdapError {

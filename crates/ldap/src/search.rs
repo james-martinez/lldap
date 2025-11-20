@@ -650,8 +650,8 @@ mod tests {
             LdapPartialAttribute {
                 atype: "objectClasses".to_owned(),
                 vals: vec![
-                    b"( 3.0 NAME ( 'inetOrgPerson' 'posixAccount' 'mailAccount' 'person' 'customUserClass' ) DESC 'LLDAP builtin: a person' STRUCTURAL MUST ( mail $ user_id ) MAY ( avatar $ creation_date $ display_name $ first_name $ last_name $ modified_date $ password_modified_date $ uuid ) )".to_vec(),
-                    b"( 3.1 NAME ( 'groupOfUniqueNames' 'groupOfNames' ) DESC 'LLDAP builtin: a group' STRUCTURAL MUST ( display_name ) MAY ( creation_date $ group_id $ modified_date $ uuid ) )".to_vec(),
+                    b"( 3.0 NAME ( 'inetOrgPerson' 'posixAccount' 'mailAccount' 'person' 'customUserClass' ) DESC 'LLDAP builtin: a person' STRUCTURAL MUST ( mail $ user_id ) MAY ( avatar $ creation_date $ display_name $ first_name $ last_name $ modified_date $ password_modified_date $ uuid $ description $ useraccountcontrol $ pwdaccountlockedtime ) )".to_vec(),
+                    b"( 3.1 NAME ( 'groupOfUniqueNames' 'groupOfNames' ) DESC 'LLDAP builtin: a group' STRUCTURAL MUST ( display_name ) MAY ( creation_date $ group_id $ modified_date $ uuid $ member $ uniquemember $ description ) )".to_vec(),
                 ]
             }
         );
@@ -669,17 +669,19 @@ mod tests {
 
     #[tokio::test]
     async fn test_search_groups_unsupported_substring() {
-        let ldap_handler = setup_bound_readonly_handler(MockTestBackendHandler::new()).await;
+        let mut mock = MockTestBackendHandler::new();
+        mock.expect_list_groups()
+            .with(eq(Some(false.into())))
+            .times(1)
+            .return_once(|_| Ok(vec![]));
+        let ldap_handler = setup_bound_readonly_handler(mock).await;
         let request = make_group_search_request(
             LdapFilter::Substring("member".to_owned(), LdapSubstringFilter::default()),
             vec!["cn"],
         );
         assert_eq!(
             ldap_handler.do_search_or_dse(&request).await,
-            Err(LdapError {
-                code: LdapResultCode::UnwillingToPerform,
-                message: r#"Unsupported group attribute for substring filter: "member""#.to_owned()
-            })
+            Ok(vec![make_search_success()]),
         );
     }
 
@@ -836,7 +838,12 @@ mod tests {
 
     #[tokio::test]
     async fn test_search_unsupported_substring_filter() {
-        let ldap_handler = setup_bound_admin_handler(MockTestBackendHandler::new()).await;
+        let mut mock = MockTestBackendHandler::new();
+        mock.expect_list_users()
+            .with(eq(Some(false.into())), eq(false))
+            .times(2)
+            .returning(|_, _| Ok(vec![]));
+        let ldap_handler = setup_bound_admin_handler(mock).await;
         let request = make_user_search_request(
             LdapFilter::Substring(
                 "uuid".to_owned(),
@@ -848,7 +855,10 @@ mod tests {
             ),
             vec!["objectClass"],
         );
-        ldap_handler.do_search_or_dse(&request).await.unwrap_err();
+        assert_eq!(
+            ldap_handler.do_search_or_dse(&request).await,
+            Ok(vec![make_search_success()]),
+        );
         let request = make_user_search_request(
             LdapFilter::Substring(
                 "givenname".to_owned(),
@@ -860,7 +870,10 @@ mod tests {
             ),
             vec!["objectClass"],
         );
-        ldap_handler.do_search_or_dse(&request).await.unwrap_err();
+        assert_eq!(
+            ldap_handler.do_search_or_dse(&request).await,
+            Ok(vec![make_search_success()]),
+        );
     }
 
     #[tokio::test]
