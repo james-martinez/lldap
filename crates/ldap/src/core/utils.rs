@@ -422,7 +422,7 @@ impl LdapSchemaDescription {
     }
 
     pub fn optional_user_attributes(&self) -> AttributeList {
-        let attributes = self
+        let mut attributes: Vec<AttributeSchema> = self
             .schema()
             .user_attributes
             .attributes
@@ -430,6 +430,16 @@ impl LdapSchemaDescription {
             .filter(|a| !REQUIRED_USER_ATTRIBUTES.contains(&a.name.as_str()))
             .cloned()
             .collect();
+
+        attributes.push(AttributeSchema {
+            name: "description".into(),
+            attribute_type: AttributeType::String,
+            is_list: false,
+            is_visible: true,
+            is_editable: true,
+            is_hardcoded: true,
+            is_readonly: false,
+        });
 
         AttributeList { attributes }
     }
@@ -472,6 +482,15 @@ impl LdapSchemaDescription {
             is_list: true,
             is_visible: true,
             is_editable: false,
+            is_hardcoded: true,
+            is_readonly: false,
+        });
+        attributes.push(AttributeSchema {
+            name: "description".into(),
+            attribute_type: AttributeType::String,
+            is_list: false,
+            is_visible: true,
+            is_editable: true,
             is_hardcoded: true,
             is_readonly: false,
         });
