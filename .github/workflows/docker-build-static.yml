@@ -472,6 +472,7 @@ jobs:
           - container: alpine
             platforms: linux/amd64,linux/arm64,linux/arm/v7
             tags: |
+                  type=ref,event=branch
                   type=ref,event=pr
                   type=semver,pattern=v{{version}}
                   type=semver,pattern=v{{major}}
@@ -488,6 +489,7 @@ jobs:
           - container: debian
             platforms: linux/amd64,linux/arm64,linux/arm/v7
             tags: |
+                  type=ref,event=branch
                   type=ref,event=pr
                   type=semver,pattern=v{{version}}
                   type=semver,pattern=v{{major}}
