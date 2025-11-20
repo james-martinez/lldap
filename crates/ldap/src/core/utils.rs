@@ -8,7 +8,7 @@ use itertools::join;
 use ldap3_proto::LdapResultCode;
 use lldap_domain::{
     public_schema::PublicSchema,
-    schema::{AttributeList, Schema},
+    schema::{AttributeList, AttributeSchema, Schema},
     types::{
         Attribute, AttributeName, AttributeType, AttributeValue, Cardinality, GroupName,
         LdapObjectClass, UserId,
@@ -448,7 +448,7 @@ impl LdapSchemaDescription {
     }
 
     pub fn optional_group_attributes(&self) -> AttributeList {
-        let attributes = self
+        let mut attributes: Vec<AttributeSchema> = self
             .schema()
             .group_attributes
             .attributes
@@ -456,6 +456,25 @@ impl LdapSchemaDescription {
             .filter(|a| !REQUIRED_GROUP_ATTRIBUTES.contains(&a.name.as_str()))
             .cloned()
             .collect();
+
+        attributes.push(AttributeSchema {
+            name: "member".into(),
+            attribute_type: AttributeType::String,
+            is_list: true,
+            is_visible: true,
+            is_editable: false,
+            is_hardcoded: true,
+            is_readonly: false,
+        });
+        attributes.push(AttributeSchema {
+            name: "uniqueMember".into(),
+            attribute_type: AttributeType::String,
+            is_list: true,
+            is_visible: true,
+            is_editable: false,
+            is_hardcoded: true,
+            is_readonly: false,
+        });
 
         AttributeList { attributes }
     }
